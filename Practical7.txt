@@ -1,0 +1,222 @@
+Practical7
+Aim: IPServiceLevelAgreementsandRemoteSPANinaCampusEnvironmentTopology.
+ 
+Part1:PreparefortheLab
+Step1:Preparetheswitchesforthelab
+DLS1#tclshreset.tcl
+Erasingthenvramfilesystemwillremoveallconfigurationfiles!Continue?[confirm]
+[OK]
+Eraseofnvram:complete
+Reloadingtheswitchin1minute,typereloadcanceltohalt
+
+Proceedwithreload?[confirm]
+
+*Mar718:41:40.403:%SYS-7-NV_BLOCK_INIT:Initializedthegeometryofnvram
+*Mar718:41:41.141:%SYS-5-RELOAD:Reloadrequestedbyconsole.ReloadReason:
+Reloadcommand.
+<switchreloads-outputomitted>
+
+Wouldyouliketoentertheinitialconfigurationdialog?[yes/no]:nSwitch>en
+*Mar100:01:30.915:%LINK-5-CHANGED:InterfaceVlan1,changedstateto
+administrativelydown
+Switch#copy BASE.CFGrunning-config
+Destinationfilename[running-config]?
+184bytescopiedin0.310secs(594bytes/sec)
+DLS1#
+Step2:Configurebasicswitchparameters.
+DLS1#configureterminal
+Enterconfigurationcommands,oneperline.EndwithCNTL/Z.
+DLS1(config)# interfacevlan99
+DLS1(config-if)#ipaddress172.16.99.1255.255.255.0
+DLS1(config-if)#noshutdown
+
+ALS1(config)#ipdefault-gateway172.16.99.1
+
+Step3:ConfigurehostPCs.
+ConfigurePCsHostAandHostBwiththeIPaddressandsubnetmaskshowninthetopology.HostAisinVLAN100withadefaultgatewayof172.16.100.1. Host B is in VLAN 200 with a default gateway of172.16.200.1.
+
+
+Step4:ConfiguretrunksandEtherChannelsbetweenswitches.
+DLS1(config)#vlan666
+DLS1(config-vlan)#nameNATIVE_DO_NOT_USEDLS1(config-vlan)#exit
+DLS1(config)#intranf0/7-10
+DLS1(config-if-range)#switchporttrunkencapsulation dot1q
+DLS1(config-if-range)# switchport trunk native vlan 666
+DLS1(config-if-range)#switchportnonegotiate
+DLS1(config-if-range)#switchportmodetrunkDLS1(config-if-range)#exit
+DLS1(config)#intranf0/7-8
+DLS1(config-if-range)#channel-group 1 mode active
+DLS1(config-if-range)#descriptionEtherChanneltoALS1
+DLS1(config-if-range)#noshut
+DLS1(config-if-range)#exitDLS1(config)#intranf0/9-10
+DLS1(config-if-range)#channel-group 2 mode active
+DLS1(config-if-range)#descriptionEtherChanneltoALS2
+DLS1(config-if-range)#noshut
+DLS1(config-if-range)#exit
+ALS1(config)#interfacerangefastEthernet0/11-12
+ALS1(config-if-range)# switchport mode trunk
+ALS1(config-if-range)#channel-group3modeactive
+ALS1(config-if-range)#noshut
+
+Step5:ConfigureVTPonALS1andALS2.
+ALS1(config)# vtp mode client
+SettingdevicetoVTPCLIENTmode.
+
+ALS2(config)# vtp mode client
+SettingdevicetoVTPCLIENTmode.
+
+Step 6: Configure VTP on DLS1.DLS1(config)#vtpdomainSWPODDLS1(config)#vtpversion2
+
+DLS1(config)#vlan99
+DLS1(config-vlan)#nameManagementDLS1(config-vlan)# vlan 100
+DLS1(config-vlan)# name Finance
+DLS1(config-vlan)# vlan 200
+DLS1(config-vlan)#nameEngineeringDLS1(config-vlan)#exit
+
+Step 7: Configure access ports.
+ALS1(config)# interface fastEthernet 0/6
+ALS1(config-if)# switchport mode access
+ALS1(config-if)#switchportaccessvlan100ALS1(config-if)#noshut
+
+ALS2(config)#interfacefastEthernet0/6
+ALS2(config-if)# switchport mode access
+ALS2(config-if)#switchportaccessvlan200ALS1(config-if)#noshut
+
+Step8:ConfigureVLANinterfacesandenablerouting.
+DLS1(config)#interfacevlan100
+DLS1(config-if)#ipaddress172.16.100.1255.255.255.0
+DLS1(config-if)#interfacevlan200
+DLS1(config-if)#ipaddress172.16.200.1255.255.255.0
+DLS1(config)# iprouting
+
+DLS1#showiproute|beginGateway
+Gatewayoflastresortisnotset
+
+172.16.0.0/16isvariablysubnetted,6subnets,2masks
+C172.16.99.0/24isdirectlyconnected,Vlan99
+L      172.16.99.1/32isdirectlyconnected,Vlan99
+C 172.16.100.0/24 is directly connected, Vlan100
+L 172.16.100.1/32 is directly connected, Vlan100
+C 172.16.200.0/24 is directly connected, Vlan200
+L172.16.200.1/32isdirectlyconnected,Vlan200
+
+DLS1# tclsh
+foreachaddress{172.16.99.1
+172.16.99.101
+172.16.99.102
+172.16.100.1
+172.16.200.1
+172.16.100.101
+172.16.200.101
+}{
+ping$address}
+
+
+Part2:ConfigureCiscoIOSIPSLA
+Step1:ConfigureCiscoIOSIPSLAresponders.
+ALS1(config)#ipslaresponder
+ALS1(config)#ipslaresponderudp-echoipaddress172.16.99.1port5000
+
+Step2:ConfiguretheCiscoIOSIPSLAsourcetomeasurenetworkperformance.
+DLS1(config)#ipsla1
+DLS1(config-ip-sla)#icmp-echo172.16.100.101
+DLS1(config-ip-sla-echo)#exit
+
+DLS1(config)#ipsla2
+DLS1(config-ip-sla)#icmp-echo172.16.200.101
+DLS1(config-ip-sla-echo)#exit
+
+DLS1(config)#ipsla3
+DLS1(config-ip-sla)#udp-jitter172.16.99.1015000
+DLS1(config-ip-sla-jitter)# exitDLS1(config)#ipsla4
+DLS1(config-ip-sla)#udp-jitter172.16.99.1025000
+DLS1(config-ip-sla-jitter)#exit
+
+DLS1(config)#ipslaschedule1lifeforeverstart-timenow
+DLS1(config)#ipslaschedule2lifeforeverstart-timenow
+DLS1(config)#ipslaschedule3lifeforeverstart-timenow
+DLS1(config)#ipslaschedule4lifeforeverstart-timenow
+
+Step3:MonitorIPSLAsoperations.
+DLS1# show ipsla configuration 1IP SLAs Infrastructure Engine-IIIEntrynumber:1
+Owner:
+Tag:
+Operation timeout (milliseconds): 5000
+Typeofoperationtoperform:icmp-echo
+Targetaddress/Sourceaddress:172.16.100.101/0.0.0.0
+TypeOf Serviceparameter:0x0
+Requestsize(ARRdataportion):28
+Verifydata:No
+VrfName:
+
+
+DLS1#showipslaconfiguration3
+IPSLAsInfrastructureEngine-III
+Entrynumber:2
+Owner:
+Tag:
+
+
+DLS1#showipslaapplication
+
+
+IPServiceLevelAgreements
+Version:RoundTripTimeMIB2.2.0,InfrastructureEngine-III
+
+
+SupportedOperationTypes:
+icmpEcho,path-echo,path-jitter,udpEcho,tcpConnect,httpdns,udpJitter,dhcp,ftp,video,udpApp,wspApp
+
+DLS1#showipslastatistics1
+
+
+IPSLAsLatestOperationStatistics
+
+
+IPSLA operation id: 1
+ALS1(config)#interfacevlan99ALS1(config-if)#shutdown
+
+Part3:SwitchPortAnalyzer(SPAN)Feature
+Step1:ConfigureRemoteSPAN(RSPAN).
+DLS1(config)#vlan300
+DLS1(config-vlan)#nameREMOTE_SPANDLS1(config-vlan)#remote-span
+DLS1#showvlanbrief|includeactive
+1	default	active	Fa0/1,Fa0/2,Fa0/3,Fa0/4
+99	Management			active100Finance	active200Engineering		active
+300REMOTE_SPAN	active
+666NATIVE_DO_NOT_USE	active
+
+
+ALS1(config)# monitor session 1 source interface Fa0/6
+ALS1(config)#monitorsession1destinationremotevlan300
+
+ALS2(config)# monitor session 10 source remote vlan 300
+ALS2(config)#monitorsession10destinationinterfaceFa0/6
+
+Step2:TestRSPANoperation
+OnPC-B,turnonWiresharkandcaptureallinterfacetraffic.
+
+
+InordertotesttheRSPANconfigurationimplementedonALS1andALS2,weneedtogeneratetrafficfromthesourcehost,PC-A.
+Step3:EndofLab
+DLS1#showrunbrief|exclude!
+Buildingconfiguration...
+
+Currentconfiguration:3174bytes
+version 15.0
+noservicepad
+servicetimestampsdebugdatetimemsec
+servicetimestampslogdatetimemsec
+noservicepassword-encryption
+hostnameDLS1
+
+ALS1#showrunbrief|exclude!Buildingconfiguration...
+
+Currentconfiguration:2692bytesversion15.0
+noservicepad
+
+ALS2#showrunbrief|exclude!Buildingconfiguration...
+
+Currentconfiguration:2694bytes
+version15.0
+noservicepad

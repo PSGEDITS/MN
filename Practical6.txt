@@ -1,0 +1,110 @@
+Practical6
+Aim: BasicInter-VLANRouting.Topology:
+
+Addressingtable
+
+PortAssignment–s2
+ 
+SubinterfaceConfigurationTable–R1
+
+Task1:PerformBasicSwitchConfigurationsSwitch>enable
+Switch#configterm
+Enterconfigurationcommands,oneperline.EndwithCNTL/Z.Switch(config)#hostnameS1
+S1(config)#enable secret classS1(config)#no ip domain-lookupS1(config)#ipdefault-gateway172.17.99.1
+S1(config)#line console 0S1(config-line)#passwordciscoS1(config-line)#login
+S1(config-line)#line vty 0 15S1(config-line)#passwordciscoS1(config-line)#login
+S1(config-line)#end
+%SYS-5-CONFIG_I:ConfiguredfromconsolebyconsoleS1#copyrunning-configstartup-config
+Destinationfilename[startup-config]?[enter]Buildingconfiguration...
+Task2:ConfiguretheEthernetInterfacesontheHostPCs
+ConfiguretheEthernetinterfacesofPC1,PC2andPC3withtheIPaddresses from theaddressingtable
+Task3:ConfigureVTPontheSwitches
+Step1.EnabletheuserportsonS2inaccessmode.S2(config)#interfacefa0/6
+S2(config-if)#switchportmodeaccessS2(config-if)#noshutdown
+S2(config-if)#interface fa0/11S2(config-if)#switchportmodeaccessS2(config-if)#noshutdown
+S2(config-if)#interface fa0/18S2(config-if)#switchportmodeaccessS2(config-if)#noshutdown
+Step2.ConfigureVTP.
+ConfigureVTPonthethreeswitchesusingthefollowingtable.RememberthatVTPdomainnamesandpasswordsarecase-sensitive.
+
+S1(config)#vtpmodeserver
+DevicemodealreadyVTPSERVER.S1(config)#vtpdomainLab6
+ChangingVTPdomainnamefromNULLtoLab6S1(config)#vtppasswordcisco
+SettingdeviceVLANdatabasepasswordtociscoS1(config)#end
+S2(config)#vtpmodeclient
+SettingdevicetoVTPCLIENTmodeS2(config)#vtpdomainLab6
+ChangingVTPdomainnamefromNULLtoLab6S2(config)#vtppasswordcisco
+SettingdeviceVLANdatabasepasswordtociscoS2(config)#end
+S3(config)#vtpmodeclient
+SettingdevicetoVTPCLIENTmodeS3(config)#vtpdomainLab6
+ChangingVTPdomainnamefromNULLtoLab6S3(config)#vtppasswordcisco
+SettingdeviceVLANdatabasepasswordtociscoS3(config)#end
+
+Step3.ConfiguretrunkingportsanddesignatethenativeVLANforthetrunks.
+S1(config)#interface fa0/1S1(config-if)#switchportmodetrunk
+S1(config-if)#switchporttrunknativevlan99
+S1(config-if)#no shutdownS1(config)#endS2(config)#interface fa0/1S2(config-if)#switchportmodetrunk
+S2(config-if)#switchporttrunknative vlan 99S2(config-if)#noshutdown
+S2(config-if)#endS3(config)#interface fa0/1S3(config-if#switchportmodetrunk
+S3(config-if)#switchporttrunknative vlan 99S3(config-if)#noshutdown
+S3(config-if-#end
+Step4.ConfiguretheVTPserverwithVLANs.S1(config)#vlan99
+S1(config-vlan)#namemanagementS1(config)#vlan10
+S1(config-vlan)#namefaculty-staffS1(config)#vlan20
+S1(config-vlan)#namestudentsS1(config)#vlan30
+S1(config-vlan)#nameguestS1(config-vlan)#end
+Step5.VerifythattheVLANscreatedonS1havebeendistributedtoS2and S3
+S2#showvlanbriefVLANNameStatusPorts
+
+    
+
+1defaultactiveFa0/1,Fa0/2,Fa0/4,Fa0/5Fa0/6,Fa0/7, Fa0/8, Fa0/9
+Fa0/10,Fa0/11,Fa0/12,Fa0/13Fa0/14,Fa0/15,Fa0/16,Fa0/17Fa0/18,Fa0/19,Fa0/20,Fa0/21
+Fa0/22,Fa0/23,Fa0/24,Gi0/1Gi0/2
+10faculty/staffactive
+20studentsactive
+30guestactive
+99managementactive
+
+
+Step6.Configurethemanagementinterfaceaddressonallthreeswitches.S1(config)#interfacevlan99
+S1(config-if)#ipaddress172.17.99.11255.255.255.0S2(config)#interfacevlan99
+S2(config-if)#ipaddress172.17.99.12255.255.255.0S3(config)#interfacevlan99
+S3(config-if)#ipaddress172.17.99.13255.255.255.0
+
+
+Step7.AssignswitchportstoVLANsonS2.S2(config)#interfacefa0/6
+S2(config-if)#switchportaccessvlan 30S2(config-if)#interfacefa0/11
+S2(config-if)#switchportaccessvlan 10S2(config-if)#interface fa0/18S2(config-if)#switchportaccessvlan 20S2(config-if)#end
+S2#copy running-config startup-configDestinationfilename[startup-config]?[enter]Buildingconfiguration...
+Step8.CheckconnectivitybetweenVLANs.OpentheCommandPromptonthethreePCs.
+•	PingfromPC1toPC2(172.17.20.22)
+•	PingfromPC2toPC3(172.17.30.23)
+•	PingfromPC3toPC1(172.17.30.21)
+
+
+Task4:ConfiguretheRouterandtheRemoteServerLANStep1.Createabasicconfigurationontherouter.
+•	ConfiguretherouterwithhostnameR1.
+•	DisableDNSlookup.
+•	ConfigureanEXECmodepasswordofclass.
+•	Configureapasswordofciscoforconsoleconnections.
+•	Configureapasswordofciscoforvtyconnections.Step2.ConfigurethetrunkinginterfaceonR1.R1(config)#interfacefastethernet0/0
+R1(config-if)#noshutdown
+R1(config-if)#interfacefastethernet0/0.1R1(config-subif)#encapsulationdot1q1
+R1(config-subif)#ipaddress172.17.1.1255.255.255.0R1(config-subif)#interface fastethernet 0/0.10R1(config-subif)#encapsulationdot1q10
+R1(config-subif)#ipaddress172.17.10.1255.255.255.0R1(config-subif)#interface fastethernet 0/0.20R1(config-subif)#encapsulationdot1q20
+R1(config-subif)#ipaddress172.17.20.1255.255.255.0R1(config-subif)#interface fastethernet 0/0.30R1(config-subif)#encapsulationdot1q30
+R1(config-subif)#ipaddress172.17.30.1255.255.255.0R1(config-subif)#interface fastethernet 0/0.99R1(config-subif)#encapsulation dot1q 99 nativeR1(config-subif)#ipaddress172.17.99.1255.255.255.0Step3.ConfiguretheserverLANinterfaceonR1.
+R1(config)#interfaceFastEthernet0/1
+R1(config-if)#ipaddress172.17.50.1255.255.255.0R1(config-if)#descriptionserverinterface
+R1(config-if)#noshutdownR1(config-if)#end
+
+R1#showiproute
+Gateway of last resort is not set172.17.0.0/24issubnetted,6subnets
+C172.17.1.0isdirectlyconnected,FastEthernet0/0.1
+C172.17.10.0isdirectlyconnected,FastEthernet0/0.10C172.17.20.0isdirectlyconnected,FastEthernet0/0.20C172.17.30.0isdirectlyconnected,FastEthernet0/0.30C172.17.50.0isdirectlyconnected,FastEthernet0/1
+C172.17.99.0isdirectlyconnected,FastEthernet0/0.99Step4.VerifyInter-VLANrouting.
+From PC1, verify that you can ping the remote server (172.17.50.254) andtheothertwohosts(172.17.20.22and172.17.30.23).Itmaytakeacoupleofpingsbeforetheend-to-endpathisestablished.
+
+Task5:Reflection
+In Task 4, you configured VLAN 99 as the native VLAN in the routerFa0/0.99interfaceconfiguration.WhywouldpacketsfromtherouterorhostsfailwhentryingtoreachtheswitchmanagementinterfacesifthenativeVLANwere left indefault?
+
